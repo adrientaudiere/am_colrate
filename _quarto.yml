@@ -1,0 +1,19 @@
+project:
+  type: website
+  output-dir: _site
+
+website:
+  title: "AM Colonization Rate"
+  navbar:
+    background: primary
+    search: false
+    left:
+      - text: "Calculator"
+        href: index.qmd
+
+format:
+  html:
+    theme: cosmo
+    css: styles.css
+    toc: false
+    page-layout: full

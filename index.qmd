@@ -1,0 +1,299 @@
+---
+title: "Arbuscular Mycorrhizal Colonization Rate Calculator"
+format:
+  html:
+    page-layout: full
+    theme: cosmo
+    toc: false
+    css: styles.css
+---
+
+## Introduction
+
+This web application provides a robust and reproducible way to compute colonization rates of endomycorrhizal interactions. You can input data either manually or by uploading a CSV file.
+
+## Data Input
+
+::: {.panel-tabset}
+
+### Manual Input
+
+Enter your data values manually:
+
+```{=html}
+<div class="input-section">
+  <div class="form-group">
+    <label for="sample_id">Sample ID:</label>
+    <input type="text" id="sample_id" class="form-control" placeholder="Enter sample ID">
+  </div>
+
+  <div class="form-group">
+    <label for="total_intersections">Total Intersections:</label>
+    <input type="number" id="total_intersections" class="form-control" placeholder="Enter total intersections" min="0">
+  </div>
+
+  <div class="form-group">
+    <label for="colonized_intersections">Colonized Intersections:</label>
+    <input type="number" id="colonized_intersections" class="form-control" placeholder="Enter colonized intersections" min="0">
+  </div>
+
+  <div class="form-group">
+    <label for="arbuscules">Arbuscules Count:</label>
+    <input type="number" id="arbuscules" class="form-control" placeholder="Enter arbuscules count" min="0">
+  </div>
+
+  <div class="form-group">
+    <label for="vesicles">Vesicles Count:</label>
+    <input type="number" id="vesicles" class="form-control" placeholder="Enter vesicles count" min="0">
+  </div>
+
+  <button id="add_manual" class="btn btn-primary" onclick="addManualData()">Add Sample</button>
+  <button id="clear_manual" class="btn btn-secondary" onclick="clearManualForm()">Clear Form</button>
+</div>
+```
+
+### CSV Upload
+
+Upload a CSV file with your data:
+
+```{=html}
+<div class="input-section">
+  <div class="form-group">
+    <label for="csv_file">Select CSV File:</label>
+    <input type="file" id="csv_file" class="form-control" accept=".csv" onchange="handleFileSelect(event)">
+  </div>
+
+  <div class="file-info">
+    <p><strong>Expected CSV format:</strong></p>
+    <ul>
+      <li><code>sample_id</code>: Sample identifier</li>
+      <li><code>total_intersections</code>: Total number of intersections observed</li>
+      <li><code>colonized_intersections</code>: Number of colonized intersections</li>
+      <li><code>arbuscules</code>: Number of arbuscules observed</li>
+      <li><code>vesicles</code>: Number of vesicles observed</li>
+    </ul>
+    <p><a href="example_data.csv" download>Download example CSV file</a></p>
+  </div>
+
+  <button id="process_csv" class="btn btn-primary" onclick="processCSV()">Process CSV</button>
+</div>
+```
+
+:::
+
+## Results
+
+::: {.results-section}
+```{=html}
+<div id="results_container">
+  <div id="no_data_message" class="alert alert-info">
+    No data available. Please enter data manually or upload a CSV file.
+  </div>
+  
+  <div id="results_table" style="display: none;">
+    <h3>Computed Metrics</h3>
+    <div id="table_output"></div>
+    
+    <div class="download-section">
+      <button id="download_csv" class="btn btn-success" onclick="downloadResults()">Download Results as CSV</button>
+    </div>
+  </div>
+</div>
+```
+:::
+
+<script>
+// Global data storage
+let appData = [];
+let uploadedCSVData = null;
+
+// Function to add manual data
+function addManualData() {
+  const sample_id = document.getElementById('sample_id').value;
+  const total_intersections = parseInt(document.getElementById('total_intersections').value);
+  const colonized_intersections = parseInt(document.getElementById('colonized_intersections').value);
+  const arbuscules = parseInt(document.getElementById('arbuscules').value);
+  const vesicles = parseInt(document.getElementById('vesicles').value);
+  
+  if (!sample_id || isNaN(total_intersections) || isNaN(colonized_intersections) || 
+      isNaN(arbuscules) || isNaN(vesicles)) {
+    alert('Please fill in all fields with valid values');
+    return;
+  }
+  
+  // Add to data array
+  appData.push({
+    sample_id: sample_id,
+    total_intersections: total_intersections,
+    colonized_intersections: colonized_intersections,
+    arbuscules: arbuscules,
+    vesicles: vesicles
+  });
+  
+  // Clear form
+  clearManualForm();
+  
+  // Update display
+  updateDisplay();
+}
+
+// Function to clear manual form
+function clearManualForm() {
+  document.getElementById('sample_id').value = '';
+  document.getElementById('total_intersections').value = '';
+  document.getElementById('colonized_intersections').value = '';
+  document.getElementById('arbuscules').value = '';
+  document.getElementById('vesicles').value = '';
+}
+
+// Function to handle file selection
+function handleFileSelect(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const text = e.target.result;
+    uploadedCSVData = parseCSV(text);
+    console.log('CSV parsed successfully:', uploadedCSVData);
+  };
+  reader.readAsText(file);
+}
+
+// Simple CSV parser function
+function parseCSV(text) {
+  const lines = text.split('\n').filter(line => line.trim() !== '');
+  if (lines.length < 2) return [];
+  
+  const headers = lines[0].split(',').map(h => h.trim());
+  const data = [];
+  
+  for (let i = 1; i < lines.length; i++) {
+    const values = lines[i].split(',').map(v => v.trim());
+    if (values.length === headers.length) {
+      const row = {};
+      headers.forEach((header, index) => {
+        const value = values[index];
+        if (header === 'sample_id') {
+          row[header] = value;
+        } else {
+          row[header] = parseFloat(value);
+        }
+      });
+      
+      // Filter out empty rows
+      if (row.sample_id && 
+          typeof row.total_intersections === 'number' &&
+          typeof row.colonized_intersections === 'number' &&
+          !isNaN(row.total_intersections) &&
+          !isNaN(row.colonized_intersections)) {
+        data.push(row);
+      }
+    }
+  }
+  
+  return data;
+}
+
+// Function to process CSV data
+function processCSV() {
+  if (!uploadedCSVData || uploadedCSVData.length === 0) {
+    alert('Please select a valid CSV file first');
+    return;
+  }
+  
+  appData = [...uploadedCSVData];
+  updateDisplay();
+}
+
+// Function to compute metrics
+function computeMetrics(data) {
+  return data.map(row => {
+    const colonization_rate = ((row.colonized_intersections / row.total_intersections) * 100).toFixed(2);
+    const arbuscule_frequency = ((row.arbuscules / row.total_intersections) * 100).toFixed(2);
+    const vesicle_frequency = ((row.vesicles / row.total_intersections) * 100).toFixed(2);
+    
+    return {
+      ...row,
+      colonization_rate: parseFloat(colonization_rate),
+      arbuscule_frequency: parseFloat(arbuscule_frequency),
+      vesicle_frequency: parseFloat(vesicle_frequency)
+    };
+  });
+}
+
+// Function to update display
+function updateDisplay() {
+  const no_data_msg = document.getElementById('no_data_message');
+  const results_table = document.getElementById('results_table');
+  const table_output = document.getElementById('table_output');
+  
+  if (appData.length === 0) {
+    no_data_msg.style.display = 'block';
+    results_table.style.display = 'none';
+  } else {
+    no_data_msg.style.display = 'none';
+    results_table.style.display = 'block';
+    
+    // Compute metrics
+    const results = computeMetrics(appData);
+    
+    // Create HTML table
+    let html = '<table class="results-table"><thead><tr>';
+    const headers = Object.keys(results[0]);
+    headers.forEach(h => {
+      html += `<th>${h.replace(/_/g, ' ').toUpperCase()}</th>`;
+    });
+    html += '</tr></thead><tbody>';
+    
+    results.forEach(row => {
+      html += '<tr>';
+      headers.forEach(h => {
+        html += `<td>${row[h]}</td>`;
+      });
+      html += '</tr>';
+    });
+    html += '</tbody></table>';
+    
+    table_output.innerHTML = html;
+  }
+}
+
+// Function to download results
+function downloadResults() {
+  if (appData.length === 0) {
+    alert('No data to download');
+    return;
+  }
+  
+  // Compute metrics for download
+  const results = computeMetrics(appData);
+  
+  // Convert to CSV
+  const headers = Object.keys(results[0]);
+  let csv = headers.join(',') + '\n';
+  results.forEach(row => {
+    csv += headers.map(h => row[h]).join(',') + '\n';
+  });
+  
+  // Trigger download
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'colonization_rates_results.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+</script>
+
+## About
+
+This application calculates various colonization metrics for arbuscular mycorrhizal fungi based on microscopic observations. The computed metrics include:
+
+- **Colonization Rate**: Percentage of colonized intersections
+- **Arbuscule Frequency**: Frequency of arbuscules per total intersections
+- **Vesicle Frequency**: Frequency of vesicles per total intersections
+
+*Note: Computation formulas are placeholders and will be implemented based on specific research methodology.*
+
