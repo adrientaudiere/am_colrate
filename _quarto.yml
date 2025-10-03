@@ -11,6 +11,9 @@ website:
       - text: "Calculator"
         href: index.qmd
 
+filters:
+  - webr
+
 format:
   html:
     theme: cosmo

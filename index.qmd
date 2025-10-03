@@ -6,7 +6,17 @@ format:
     theme: cosmo
     toc: false
     css: styles.css
+filters:
+  - webr
+webr:
+  packages: []
 ---
+
+```{webr-r}
+#| context: setup
+# Load the functions from R/functions.R
+source("R/functions.R")
+```
 
 ## Introduction
 
@@ -206,24 +216,47 @@ function processCSV() {
   updateDisplay();
 }
 
-// Function to compute metrics
-function computeMetrics(data) {
-  return data.map(row => {
-    const colonization_rate = ((row.colonized_intersections / row.total_intersections) * 100).toFixed(2);
-    const arbuscule_frequency = ((row.arbuscules / row.total_intersections) * 100).toFixed(2);
-    const vesicle_frequency = ((row.vesicles / row.total_intersections) * 100).toFixed(2);
+// Function to compute metrics using R
+async function computeMetrics(data) {
+  // Convert JavaScript data to R data frame format
+  const sample_ids = data.map(row => row.sample_id);
+  const total_intersections = data.map(row => row.total_intersections);
+  const colonized_intersections = data.map(row => row.colonized_intersections);
+  const arbuscules = data.map(row => row.arbuscules);
+  const vesicles = data.map(row => row.vesicles);
+  
+  // Create R data frame and compute metrics
+  await globalThis.webR.evalRVoid(`
+    temp_data <- data.frame(
+      sample_id = c(${sample_ids.map(s => `"${s}"`).join(', ')}),
+      total_intersections = c(${total_intersections.join(', ')}),
+      colonized_intersections = c(${colonized_intersections.join(', ')}),
+      arbuscules = c(${arbuscules.join(', ')}),
+      vesicles = c(${vesicles.join(', ')})
+    )
+    result_data <- compute_metrics(temp_data)
+  `);
+  
+  // Get results back from R
+  const results = [];
+  for (let i = 0; i < data.length; i++) {
+    const colonization_rate = await globalThis.webR.evalRNumber(`result_data$colonization_rate[${i + 1}]`);
+    const arbuscule_frequency = await globalThis.webR.evalRNumber(`result_data$arbuscule_frequency[${i + 1}]`);
+    const vesicle_frequency = await globalThis.webR.evalRNumber(`result_data$vesicle_frequency[${i + 1}]`);
     
-    return {
-      ...row,
-      colonization_rate: parseFloat(colonization_rate),
-      arbuscule_frequency: parseFloat(arbuscule_frequency),
-      vesicle_frequency: parseFloat(vesicle_frequency)
-    };
-  });
+    results.push({
+      ...data[i],
+      colonization_rate: colonization_rate.toFixed(2),
+      arbuscule_frequency: arbuscule_frequency.toFixed(2),
+      vesicle_frequency: vesicle_frequency.toFixed(2)
+    });
+  }
+  
+  return results;
 }
 
 // Function to update display
-function updateDisplay() {
+async function updateDisplay() {
   const no_data_msg = document.getElementById('no_data_message');
   const results_table = document.getElementById('results_table');
   const table_output = document.getElementById('table_output');
@@ -236,7 +269,7 @@ function updateDisplay() {
     results_table.style.display = 'block';
     
     // Compute metrics
-    const results = computeMetrics(appData);
+    const results = await computeMetrics(appData);
     
     // Create HTML table
     let html = '<table class="results-table"><thead><tr>';
@@ -260,14 +293,14 @@ function updateDisplay() {
 }
 
 // Function to download results
-function downloadResults() {
+async function downloadResults() {
   if (appData.length === 0) {
     alert('No data to download');
     return;
   }
   
   // Compute metrics for download
-  const results = computeMetrics(appData);
+  const results = await computeMetrics(appData);
   
   // Convert to CSV
   const headers = Object.keys(results[0]);
@@ -295,5 +328,5 @@ This application calculates various colonization metrics for arbuscular mycorrhi
 - **Arbuscule Frequency**: Frequency of arbuscules per total intersections
 - **Vesicle Frequency**: Frequency of vesicles per total intersections
 
-*Note: Computation formulas are placeholders and will be implemented based on specific research methodology.*
+The computations are performed using R functions defined in `R/functions.R` and executed in the browser using WebR.
 
