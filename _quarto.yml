@@ -1,6 +1,8 @@
 project:
   type: website
   output-dir: _site
+  resources:
+    - R/
 
 website:
   title: "AM Colonization Rate"
@@ -10,6 +12,9 @@ website:
     left:
       - text: "Calculator"
         href: index.qmd
+
+filters:
+  - webr
 
 format:
   html:

@@ -4,7 +4,7 @@
 
 ### Local Development
 
-1. Install [Quarto](https://quarto.org/docs/get-started/) (version 1.4 or higher)
+1. Install [Quarto](https://quarto.org/docs/get-started/) (version 1.4.554 or higher)
 
 2. Clone the repository:
    ```bash
@@ -12,13 +12,18 @@
    cd am_colrate
    ```
 
-3. Preview the application:
+3. Install the WebR extension:
+   ```bash
+   quarto add coatless/quarto-webr --no-prompt
+   ```
+
+4. Preview the application:
    ```bash
    quarto preview index.qmd
    ```
    This will open a browser with the live application.
 
-4. Or render to static HTML:
+5. Or render to static HTML:
    ```bash
    quarto render
    ```
@@ -39,7 +44,7 @@ Your app will be available at: `https://<username>.github.io/<repository>/`
 ### Option 2: Netlify
 
 1. Connect your GitHub repository to [Netlify](https://netlify.com)
-2. Set build command: `quarto render`
+2. Set build command: `quarto add coatless/quarto-webr --no-prompt && quarto render`
 3. Set publish directory: `_site`
 4. Deploy!
 
@@ -56,25 +61,20 @@ Simply upload the contents of the `_site/` folder to any static web hosting serv
 
 ### Update Computation Formulas
 
-Edit the `computeMetrics()` function in `index.qmd` to implement your specific colonization rate formulas:
+Edit the R functions in `R/functions.R` to implement your specific colonization rate formulas:
 
-```javascript
-function computeMetrics(data) {
-  return data.map(row => {
-    // Implement your actual formulas here
-    const colonization_rate = ((row.colonized_intersections / row.total_intersections) * 100).toFixed(2);
-    const arbuscule_frequency = ((row.arbuscules / row.total_intersections) * 100).toFixed(2);
-    const vesicle_frequency = ((row.vesicles / row.total_intersections) * 100).toFixed(2);
-    
-    return {
-      ...row,
-      colonization_rate: parseFloat(colonization_rate),
-      arbuscule_frequency: parseFloat(arbuscule_frequency),
-      vesicle_frequency: parseFloat(vesicle_frequency)
-    };
-  });
+```r
+# Example: Modify the colonization rate calculation
+compute_colonization_rate <- function(colonized_intersections, total_intersections) {
+  if (total_intersections == 0) {
+    return(0)
+  }
+  # Implement your custom formula here
+  return((colonized_intersections / total_intersections) * 100)
 }
 ```
+
+The R functions are automatically loaded into the WebR environment and used by the JavaScript interface.
 
 ### Styling
 
@@ -87,14 +87,15 @@ To add additional input fields or computed metrics:
 1. Add input field HTML in the Manual Input section of `index.qmd`
 2. Update the `addManualData()` function to capture the new field
 3. Update the CSV parser to handle the new column
-4. Modify `computeMetrics()` to include new calculations
-5. The table will automatically include all fields in the results
+4. Add new R functions in `R/functions.R` to compute the new metrics
+5. Update the `compute_metrics()` R function to include the new calculations
+6. The table will automatically include all fields in the results
 
 ## Browser Compatibility
 
-The application uses modern JavaScript and should work in:
+The application uses WebR and modern JavaScript and should work in:
 - Chrome/Edge (latest 2 versions)
 - Firefox (latest 2 versions)
 - Safari (latest 2 versions)
 
-No server-side processing is required - everything runs in the browser!
+All computations are performed using R code executed in the browser via WebR - no server-side processing is required!

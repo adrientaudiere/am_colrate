@@ -12,16 +12,20 @@ A web application built with Quarto and WebR for computing colonization rates of
   - Real-time display of computed metrics in a formatted table
   - Downloadable results as CSV file
 
-- **Computed Metrics** (placeholder formulas):
-  - Colonization Rate
-  - Arbuscule Frequency
-  - Vesicle Frequency
+- **Computed Metrics**:
+  - Colonization Rate: Percentage of colonized intersections
+  - Arbuscule Frequency: Frequency of arbuscules per total intersections  
+  - Vesicle Frequency: Frequency of vesicles per total intersections
+  
+- **R-Based Computations**:
+  - All calculations are performed using R functions defined in `R/functions.R`
+  - Executed in-browser using WebR (no server required)
 
 ## Getting Started
 
 ### Prerequisites
 
-- [Quarto](https://quarto.org/docs/get-started/) (version 1.4 or higher)
+- [Quarto](https://quarto.org/docs/get-started/) (version 1.4.554 or higher)
 
 ### Installation
 
@@ -31,12 +35,17 @@ A web application built with Quarto and WebR for computing colonization rates of
    cd am_colrate
    ```
 
-2. Preview the application:
+2. Install the WebR extension:
+   ```bash
+   quarto add coatless/quarto-webr --no-prompt
+   ```
+
+3. Preview the application:
    ```bash
    quarto preview index.qmd
    ```
 
-3. Or render to HTML:
+4. Or render to HTML:
    ```bash
    quarto render
    ```
@@ -80,6 +89,8 @@ Once data is loaded and metrics are computed, click the "Download Results as CSV
 
 ```
 am_colrate/
+├── R/
+│   └── functions.R     # R functions for colonization rate computations
 ├── index.qmd           # Main Quarto document with WebR integration
 ├── styles.css          # Custom CSS styling
 ├── _quarto.yml         # Quarto configuration
@@ -90,10 +101,10 @@ am_colrate/
 
 ## Development Notes
 
-- The current implementation focuses on UI design and data flow
-- Computation formulas are placeholders and need to be implemented based on specific research methodology
-- The application uses WebR for R computations in the browser (no server required)
-- Built with Quarto's interactive document features
+- All computation formulas are implemented in R functions located in `R/functions.R`
+- The application uses WebR to execute R code in the browser (no server required)
+- Built with Quarto's interactive document features and the quarto-webr extension
+- The WebR extension is installed automatically during the build process
 
 ## License
 

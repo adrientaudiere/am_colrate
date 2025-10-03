@@ -25,7 +25,10 @@ jobs:
       - name: Set up Quarto
         uses: quarto-dev/quarto-actions/setup@v2
         with:
-          version: 1.4.549
+          version: 1.4.554
+
+      - name: Install webr extension
+        run: quarto add coatless/quarto-webr --no-prompt
 
       - name: Render Quarto Project
         run: quarto render
